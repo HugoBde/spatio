@@ -1,0 +1,14 @@
+[package]
+name = "spatio"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "spatio"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+js-sys = "0.3.69"
+wasm-bindgen = "0.2.92"
+web-sys = { version = "0.3.69", features = ["Document", "Element", "HtmlCanvasElement", "HtmlElement", "Node", "WebGl2RenderingContext", "WebGlBuffer", "WebGlProgram", "WebGlShader", "WebGlVertexArrayObject", "Window"] }
