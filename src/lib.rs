@@ -1,6 +1,10 @@
+mod boxx;
 mod primitives;
+mod triangle;
 mod utils;
 
+use primitives::{Colour, Draw, Vertex};
+use triangle::Triangle;
 use utils::{compile_shader, link_program};
 use web_sys::wasm_bindgen::prelude::*;
 use web_sys::{window, WebGl2RenderingContext, WebGlProgram};
@@ -27,12 +31,10 @@ pub fn main() -> Result<(), JsValue> {
         WebGl2RenderingContext::VERTEX_SHADER,
         r##"#version 300 es
 
-        in vec4 position;
-        out vec4 var_position;
+        in vec3 position;
 
         void main() {
-            var_position = position;
-            gl_Position = position;
+            gl_Position = vec4(position, 1.0);
         }
         "##,
     )?;
@@ -43,21 +45,19 @@ pub fn main() -> Result<(), JsValue> {
 
         precision highp float;
         out vec4 outColor;
-        in vec4 var_position;
+
+        uniform vec4 colour;
 
         void main() {
-            outColor = vec4(
-                (var_position.x + 1.0) / 2.0,
-                (var_position.y + 1.0) / 2.0,
-                1,
-                1
-            );
+            outColor = colour;
         }
         "##,
     )?;
     let program = link_program(&context, &vert_shader, &frag_shader)?;
     context.use_program(Some(&program));
 
+    context.enable(WebGl2RenderingContext::DEPTH_TEST);
+    context.depth_func(WebGl2RenderingContext::LEQUAL);
 
     run(&context, &program)?;
 
@@ -65,22 +65,40 @@ pub fn main() -> Result<(), JsValue> {
 }
 
 fn run(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), JsValue> {
-    let point_a = primitives::Vertex {
-        x: -0.5,
-        y: 0.0,
-        z: 0.0,
-    };
-    let point_b = primitives::Vertex {
-        x: 0.5, y: 0.0, z: 0.0
-    };
-    let point_c = primitives::Vertex {
-        x: 0.0, y: 0.5, z: 0.0
-    };
-
     utils::clear_context(context);
-    primitives::draw_line(context, program, &point_a, &point_b)?;
-    primitives::draw_line(context, program, &point_a, &point_c)?;
-    primitives::draw_line(context, program, &point_b, &point_c)?;
+    // let o = Vertex::new(0., 0., 0.);
+    // let v = Vertex::new(0.5, 0.0, 0.0);
+    // let u = Vertex::new(0.0, 0.5, 0.0);
+    // let w = Vertex::new(0.0, 0.0, 0.5);
+    //
+    // let line = Line {
+    //     a:      o,
+    //     b:      v,
+    //     colour: Colour::RED,
+    // };
+    // line.draw(context, program)?;
+    // let line = Line {
+    //     a:      o,
+    //     b:      u,
+    //     colour: Colour::GREEN,
+    // };
+    // line.draw(context, program)?;
+    //
+    // let line = Line {
+    //     a:      o,
+    //     b:      w,
+    //     colour: Colour::BLUE,
+    // };
+    // line.draw(context, program)?;
+
+    let t = Triangle::new(
+        Vertex::new(0.0, 0.5, 0.0),
+        Vertex::new(-0.5, -0.5, 0.0),
+        Vertex::new(0.5, -0.5, 0.0),
+        Colour::RED,
+    );
+
+    t.draw(&context, &program)?;
 
     return Ok(());
 }
