@@ -3,6 +3,7 @@ mod primitives;
 mod triangle;
 mod utils;
 
+use boxx::Box;
 use primitives::{Colour, Draw, Vertex};
 use triangle::Triangle;
 use utils::{compile_shader, link_program};
@@ -91,14 +92,16 @@ fn run(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), J
     // };
     // line.draw(context, program)?;
 
-    let t = Triangle::new(
-        Vertex::new(0.0, 0.5, 0.0),
-        Vertex::new(-0.5, -0.5, 0.0),
-        Vertex::new(0.5, -0.5, 0.0),
-        Colour::RED,
-    );
-
-    t.draw(&context, &program)?;
+    // let t = Triangle::new(
+    //     Vertex::new(0.0, 0.5, 0.0),
+    //     Vertex::new(-0.5, -0.5, 0.0),
+    //     Vertex::new(0.5, -0.5, 0.0),
+    //     Colour::RED,
+    // );
+    //
+    // t.draw(&context, &program)?;
+    let b = Box::default();
+    b.draw(&context, &program)?;
 
     return Ok(());
 }

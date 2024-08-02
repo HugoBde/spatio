@@ -7,7 +7,7 @@ pub struct Box {
 
 impl Default for Box {
     fn default() -> Box {
-        Box::new(1.0, -1.0, -1.0, -1.0, 1.0, 1.0)
+        Box::new(0.5, -0.5, -0.5, -0.5, 0.5, 0.5)
     }
 }
 
