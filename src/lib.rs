@@ -87,17 +87,28 @@ fn run(
     // let cart = CartesianAxis::new(program);
     // cart.draw(context, None)?;
     //
-    // let t = Triangle::new(
-    //     Vertex::new(-0.5, 0.0, 0.0),
-    //     Vertex::new(0.0, 0.5, 0.0),
-    //     Vertex::new(0.5, 0.0, 0.0),
-    //     Colour::PINK,
-    //     program,
-    // );
-    //
-    // t.draw(&context, None)?;
+    let t = Triangle::new(
+        context,
+        Vertex::new(-0.5, 0.0, -0.3),
+        Vertex::new(0.0, 0.5, -0.6),
+        Vertex::new(0.5, 0.0, -0.6),
+        Colour::PINK,
+        program,
+    );
 
-    let b = boxx::Box::new(0.5, -0.5, -0.5, -0.5, 0.5, 0.5, program);
+
+    let b = boxx::Box::new(
+        context,
+        0.5,
+        -0.5,
+        -0.5,
+        -0.5,
+        0.5,
+        0.5,
+        Colour::RED,
+        program,
+    );
     b.draw(&context, None)?;
+    t.draw(&context, None)?;
     return Ok(());
 }

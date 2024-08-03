@@ -1,3 +1,5 @@
+use web_sys::{WebGl2RenderingContext, WebGlUniformLocation};
+
 pub struct Colour {
     pub r: f32,
     pub g: f32,
@@ -119,5 +121,19 @@ impl Colour {
             b,
             a,
         }
+    }
+
+    pub fn uniform(
+        &self,
+        context: &WebGl2RenderingContext,
+        colour_uniform_location: &WebGlUniformLocation,
+    ) {
+        context.uniform4f(
+            Some(colour_uniform_location),
+            self.r,
+            self.g,
+            self.b,
+            self.a,
+        );
     }
 }

@@ -1,4 +1,9 @@
-use web_sys::{WebGl2RenderingContext, WebGlProgram};
+use web_sys::{
+    WebGl2RenderingContext,
+    WebGlBuffer,
+    WebGlProgram,
+    WebGlUniformLocation,
+};
 
 use crate::colour::Colour;
 use crate::matrix::Matrix4F;
@@ -30,25 +35,25 @@ impl Vertex {
 
 
 pub struct Line<'a> {
-    pub a:       Vertex,
-    pub b:       Vertex,
-    pub colour:  Colour,
-    pub program: &'a WebGlProgram,
+    position_buffer:             WebGlBuffer,
+    colour:                      Colour,
+    position_attribute_location: i32,
+    colour_uniform_location:     WebGlUniformLocation,
+    program:                     &'a WebGlProgram,
 }
 
-impl<'a> Draw for Line<'a> {
-    fn draw(
-        &self,
-        context: &web_sys::WebGl2RenderingContext,
-        model_matrix: Option<Matrix4F>,
-    ) -> Result<(), String> {
-        let position_attribute_location =
-            context.get_attrib_location(&self.program, "position");
-        let vertices =
-            [self.a.x, self.a.y, self.a.z, self.b.x, self.b.y, self.b.z];
+impl<'a> Line<'a> {
+    pub fn new(
+        context: &WebGl2RenderingContext,
+        a: Vertex,
+        b: Vertex,
+        colour: Colour,
+        program: &'a WebGlProgram,
+    ) -> Line<'a> {
+        let vertices = [a.x, a.y, a.z, b.x, b.y, b.z];
 
-        let buffer =
-            context.create_buffer().ok_or("failed to create buffer")?;
+        let buffer = context.create_buffer().unwrap();
+
         context
             .bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
 
@@ -63,14 +68,40 @@ impl<'a> Draw for Line<'a> {
             );
         }
 
-        let vao = context
-            .create_vertex_array()
-            .ok_or("Could not create vertex array object")?;
+        let position_attribute_location =
+            context.get_attrib_location(program, "position");
 
-        context.bind_vertex_array(Some(&vao));
+        let colour_uniform_location = context
+            .get_uniform_location(&program, "colour")
+            .expect("Missing \"colour\" uniform in program");
+
+        return Line {
+            position_buffer: buffer,
+            colour,
+            program,
+            position_attribute_location,
+            colour_uniform_location,
+        };
+    }
+}
+
+impl<'a> Draw for Line<'a> {
+    fn draw(
+        &self,
+        context: &web_sys::WebGl2RenderingContext,
+        _model_matrix: Option<Matrix4F>,
+    ) -> Result<(), String> {
+        context.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&self.position_buffer),
+        );
+
+        context.enable_vertex_attrib_array(
+            self.position_attribute_location as u32,
+        );
 
         context.vertex_attrib_pointer_with_i32(
-            position_attribute_location as u32,
+            self.position_attribute_location as u32,
             3,
             WebGl2RenderingContext::FLOAT,
             false,
@@ -78,16 +109,10 @@ impl<'a> Draw for Line<'a> {
             0,
         );
 
-        context.enable_vertex_attrib_array(position_attribute_location as u32);
-        context.bind_vertex_array(Some(&vao));
-        context.line_width(5.0);
-
-        let colour_uniform_location = context
-            .get_uniform_location(&self.program, "colour")
-            .expect("Missing \"colour\" uniform in program");
+        context.use_program(Some(self.program));
 
         context.uniform4f(
-            Some(&colour_uniform_location),
+            Some(&self.colour_uniform_location),
             self.colour.r,
             self.colour.g,
             self.colour.b,

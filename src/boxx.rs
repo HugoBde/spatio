@@ -1,24 +1,35 @@
-use web_sys::WebGlProgram;
+use web_sys::{
+    WebGl2RenderingContext,
+    WebGlBuffer,
+    WebGlProgram,
+    WebGlUniformLocation,
+};
 
 use crate::colour::Colour;
 use crate::matrix::Matrix4F;
-use crate::primitives::{Draw, Vertex};
-use crate::triangle::Triangle;
+use crate::primitives::Draw;
 
 pub struct Box<'a> {
-    triangles: [Triangle<'a>; 12],
+    position_buffer:             WebGlBuffer,
+    indices_buffer:              WebGlBuffer,
+    position_attribute_location: i32,
+    colour_uniform_location:     WebGlUniformLocation,
+    colour:                      Colour,
+    program:                     &'a WebGlProgram,
 }
 
 impl<'a> Box<'a> {
     pub fn new(
+        context: &WebGl2RenderingContext,
         top: f32,
         left: f32,
         front: f32,
         bottom: f32,
         right: f32,
         back: f32,
+        colour: Colour,
         program: &'a WebGlProgram,
-    ) -> Box {
+    ) -> Box<'a> {
         //     4------5
         //    /|     /|
         //   / |    / |
@@ -28,54 +39,14 @@ impl<'a> Box<'a> {
         //  |/     |/
         //  3------2
         let vertices = [
-            // 0
-            Vertex {
-                x: left,
-                y: top,
-                z: front,
-            },
-            // 1
-            Vertex {
-                x: right,
-                y: top,
-                z: front,
-            },
-            // 2
-            Vertex {
-                x: right,
-                y: bottom,
-                z: front,
-            },
-            // 3
-            Vertex {
-                x: left,
-                y: bottom,
-                z: front,
-            },
-            // 4
-            Vertex {
-                x: left,
-                y: top,
-                z: back,
-            },
-            // 5
-            Vertex {
-                x: right,
-                y: top,
-                z: back,
-            },
-            // 6
-            Vertex {
-                x: right,
-                y: bottom,
-                z: back,
-            },
-            // 7
-            Vertex {
-                x: left,
-                y: bottom,
-                z: back,
-            },
+            left, top, front, // 0
+            right, top, front, // 1
+            right, bottom, front, // 2
+            left, bottom, front, // 3
+            left, top, back, // 4
+            right, top, back, // 5
+            right, bottom, back, // 6
+            left, bottom, back, // 7
         ];
 
         //     4------5
@@ -87,95 +58,71 @@ impl<'a> Box<'a> {
         //  |/     |/
         //  3------2
         //
-        let triangles: [Triangle; 12] = [
-            Triangle::new(
-                vertices[0],
-                vertices[1],
-                vertices[3],
-                Colour::RED,
-                program,
-            ),
-            Triangle::new(
-                vertices[1],
-                vertices[2],
-                vertices[3],
-                Colour::PURPLE,
-                program,
-            ),
-            Triangle::new(
-                vertices[4],
-                vertices[5],
-                vertices[0],
-                Colour::YELLOW,
-                program,
-            ),
-            Triangle::new(
-                vertices[5],
-                vertices[1],
-                vertices[0],
-                Colour::GREEN,
-                program,
-            ),
-            Triangle::new(
-                vertices[5],
-                vertices[6],
-                vertices[1],
-                Colour::CYAN,
-                program,
-            ),
-            Triangle::new(
-                vertices[6],
-                vertices[2],
-                vertices[1],
-                Colour::BLUE,
-                program,
-            ),
-            Triangle::new(
-                vertices[6],
-                vertices[7],
-                vertices[2],
-                Colour::MAGENTA,
-                program,
-            ),
-            Triangle::new(
-                vertices[7],
-                vertices[3],
-                vertices[2],
-                Colour::PINK,
-                program,
-            ),
-            Triangle::new(
-                vertices[7],
-                vertices[4],
-                vertices[3],
-                Colour::WHITE,
-                program,
-            ),
-            Triangle::new(
-                vertices[4],
-                vertices[0],
-                vertices[3],
-                Colour::GREY,
-                program,
-            ),
-            Triangle::new(
-                vertices[5],
-                vertices[4],
-                vertices[6],
-                Colour::PURPLE,
-                program,
-            ),
-            Triangle::new(
-                vertices[4],
-                vertices[6],
-                vertices[7],
-                Colour::LIGHT_BLUE,
-                program,
-            ),
+        let triangles: [u16; 36] = [
+            0, 1, 2, // FRONT 1
+            0, 2, 3, // FRONT 2
+            4, 5, 1, // TOP 1
+            4, 1, 0, // TOP 2
+            5, 6, 2, // RIGHT 1
+            5, 2, 1, // RIGHT 2
+            6, 7, 2, // BOTTOM 1
+            6, 2, 3, // BOTTOM 2
+            7, 4, 0, // LEFT 1
+            7, 0, 3, // LEFT 2
+            5, 4, 6, // BACK 1
+            5, 6, 7, // BACK 2
         ];
 
+        let position_buffer = context.create_buffer().unwrap();
+
+        context.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&position_buffer),
+        );
+
+        unsafe {
+            let positions_array_buf_view =
+                js_sys::Float32Array::view(&vertices);
+
+            context.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                &positions_array_buf_view,
+                WebGl2RenderingContext::STATIC_DRAW,
+            );
+        }
+
+        let indices_buffer = context.create_buffer().unwrap();
+
+        context.bind_buffer(
+            WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
+            Some(&indices_buffer),
+        );
+
+        unsafe {
+            let indices_array_buf_view = js_sys::Uint16Array::view(&triangles);
+
+            context.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
+                &indices_array_buf_view,
+                WebGl2RenderingContext::STATIC_DRAW,
+            );
+        }
+
+        let position_attribute_location =
+            context.get_attrib_location(program, "position");
+
+        let colour_uniform_location = context
+            .get_uniform_location(&program, "colour")
+            .expect("Missing \"colour\" uniform in program");
+
+
         return Box {
-            triangles,
+            position_buffer,
+            indices_buffer,
+            position_attribute_location,
+            colour_uniform_location,
+            colour,
+            program,
         };
     }
 }
@@ -184,11 +131,41 @@ impl<'a> Draw for Box<'a> {
     fn draw(
         &self,
         context: &web_sys::WebGl2RenderingContext,
-        model_matrix: Option<Matrix4F>,
+        _model_matrix: Option<Matrix4F>,
     ) -> Result<(), String> {
-        for triangle in &self.triangles {
-            triangle.draw(context, model_matrix)?;
-        }
+        context.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&self.position_buffer),
+        );
+
+        context.enable_vertex_attrib_array(
+            self.position_attribute_location as u32,
+        );
+
+        context.vertex_attrib_pointer_with_i32(
+            self.position_attribute_location as u32,
+            3,
+            WebGl2RenderingContext::FLOAT,
+            false,
+            0,
+            0,
+        );
+
+        context.bind_buffer(
+            WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
+            Some(&self.indices_buffer),
+        );
+
+        context.use_program(Some(self.program));
+
+        self.colour.uniform(context, &self.colour_uniform_location);
+
+        context.draw_elements_with_i32(
+            WebGl2RenderingContext::TRIANGLES,
+            36,
+            WebGl2RenderingContext::UNSIGNED_SHORT,
+            0,
+        );
 
         return Ok(());
     }

@@ -1,51 +1,39 @@
-use web_sys::{WebGl2RenderingContext, WebGlProgram};
+use web_sys::{
+    WebGl2RenderingContext,
+    WebGlBuffer,
+    WebGlProgram,
+    WebGlUniformLocation,
+};
 
 use crate::colour::Colour;
 use crate::primitives::{Draw, Vertex};
-use crate::{matrix, Matrix4F};
+use crate::Matrix4F;
 
 pub struct Triangle<'a> {
-    a:       Vertex,
-    b:       Vertex,
-    c:       Vertex,
-    colour:  Colour,
-    program: &'a WebGlProgram,
+    positions_buffer:            WebGlBuffer,
+    colour:                      Colour,
+    position_attribute_location: i32,
+    colour_uniform_location:     WebGlUniformLocation,
+    program:                     &'a WebGlProgram,
 }
 
 impl<'a> Triangle<'a> {
     pub fn new(
+        context: &WebGl2RenderingContext,
         a: Vertex,
         b: Vertex,
         c: Vertex,
         colour: Colour,
         program: &'a WebGlProgram,
-    ) -> Triangle {
-        Triangle {
-            a,
-            b,
-            c,
-            colour,
-            program,
-        }
-    }
-}
+    ) -> Triangle<'a> {
+        let vertices = [a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z];
 
-impl<'a> Draw for Triangle<'a> {
-    fn draw(
-        &self,
-        context: &web_sys::WebGl2RenderingContext,
-        _model_matrix: Option<Matrix4F>,
-    ) -> Result<(), String> {
-        let vertices = [
-            self.a.x, self.a.y, self.a.z, self.b.x, self.b.y, self.b.z,
-            self.c.x, self.c.y, self.c.z,
-        ];
+        let positions_buffer = context.create_buffer().unwrap();
 
-        let buffer =
-            context.create_buffer().ok_or("failed to create buffer")?;
-
-        context
-            .bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
+        context.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&positions_buffer),
+        );
 
         unsafe {
             let positions_array_buf_view =
@@ -59,12 +47,40 @@ impl<'a> Draw for Triangle<'a> {
         }
 
         let position_attribute_location =
-            context.get_attrib_location(&self.program, "position");
+            context.get_attrib_location(&program, "position");
 
-        context.enable_vertex_attrib_array(position_attribute_location as u32);
+        let colour_uniform_location = context
+            .get_uniform_location(&program, "colour")
+            .expect("Missing \"colour\" uniform in program");
+
+
+        Triangle {
+            positions_buffer,
+            colour,
+            position_attribute_location,
+            colour_uniform_location,
+            program,
+        }
+    }
+}
+
+impl<'a> Draw for Triangle<'a> {
+    fn draw(
+        &self,
+        context: &web_sys::WebGl2RenderingContext,
+        _model_matrix: Option<Matrix4F>,
+    ) -> Result<(), String> {
+        context.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&self.positions_buffer),
+        );
+
+        context.enable_vertex_attrib_array(
+            self.position_attribute_location as u32,
+        );
 
         context.vertex_attrib_pointer_with_i32(
-            position_attribute_location as u32,
+            self.position_attribute_location as u32,
             3,
             WebGl2RenderingContext::FLOAT,
             false,
@@ -72,27 +88,15 @@ impl<'a> Draw for Triangle<'a> {
             0,
         );
 
-        let colour_uniform_location = context
-            .get_uniform_location(&self.program, "colour")
-            .expect("Missing \"colour\" uniform in program");
+        context.use_program(Some(self.program));
 
         context.uniform4f(
-            Some(&colour_uniform_location),
+            Some(&self.colour_uniform_location),
             self.colour.r,
             self.colour.g,
             self.colour.b,
             self.colour.a,
         );
-
-        // let model_matrix_uniform_location = context
-        //     .get_uniform_location(&self.program, "model_matrix")
-        //     .expect("Missing \"model_matrix\" uniform in program");
-        //
-        // context.uniform_matrix4fv_with_f32_array(
-        //     Some(&model_matrix_uniform_location),
-        //     false,
-        //     &model_matrix.unwrap_or(matrix::ID_MATRIX),
-        // );
 
         context.draw_arrays(WebGl2RenderingContext::TRIANGLES, 0, 3);
 
