@@ -1,10 +1,15 @@
 mod boxx;
+mod cartesian_axis;
+mod colour;
+mod matrix;
 mod primitives;
 mod triangle;
 mod utils;
 
-use boxx::Box;
-use primitives::{Colour, Draw, Vertex};
+use cartesian_axis::CartesianAxis;
+use colour::Colour;
+use matrix::*;
+use primitives::{Draw, Vertex};
 use triangle::Triangle;
 use utils::{compile_shader, link_program};
 use web_sys::wasm_bindgen::prelude::*;
@@ -13,19 +18,13 @@ use web_sys::{window, WebGl2RenderingContext, WebGlProgram};
 
 #[wasm_bindgen]
 extern "C" {
-    pub fn alert(s: &str);
+    #[wasm_bindgen(js_namespace = console)]
+    pub fn log(s: &str);
 }
 
 #[wasm_bindgen]
 pub fn main() -> Result<(), JsValue> {
-    let window = window().unwrap();
-    let document = window.document().unwrap();
-    let canvas = document.get_element_by_id("canvas").unwrap();
-    let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
-    let context = canvas
-        .get_context("webgl2")?
-        .unwrap()
-        .dyn_into::<WebGl2RenderingContext>()?;
+    let context = init()?;
 
     let vert_shader = compile_shader(
         &context,
@@ -65,43 +64,40 @@ pub fn main() -> Result<(), JsValue> {
     return Ok(());
 }
 
-fn run(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), JsValue> {
-    utils::clear_context(context);
-    // let o = Vertex::new(0., 0., 0.);
-    // let v = Vertex::new(0.5, 0.0, 0.0);
-    // let u = Vertex::new(0.0, 0.5, 0.0);
-    // let w = Vertex::new(0.0, 0.0, 0.5);
-    //
-    // let line = Line {
-    //     a:      o,
-    //     b:      v,
-    //     colour: Colour::RED,
-    // };
-    // line.draw(context, program)?;
-    // let line = Line {
-    //     a:      o,
-    //     b:      u,
-    //     colour: Colour::GREEN,
-    // };
-    // line.draw(context, program)?;
-    //
-    // let line = Line {
-    //     a:      o,
-    //     b:      w,
-    //     colour: Colour::BLUE,
-    // };
-    // line.draw(context, program)?;
+fn init() -> Result<WebGl2RenderingContext, JsValue> {
+    let window = window().unwrap();
+    let document = window.document().unwrap();
+    let canvas = document.get_element_by_id("canvas").unwrap();
+    let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
+    let context = canvas
+        .get_context("webgl2")?
+        .unwrap()
+        .dyn_into::<WebGl2RenderingContext>()?;
 
+    context.viewport(0, 0, 2000, 2000);
+    return Ok(context);
+}
+
+fn run(
+    context: &WebGl2RenderingContext,
+    program: &WebGlProgram,
+) -> Result<(), JsValue> {
+    utils::clear_context(context);
+
+    // let cart = CartesianAxis::new(program);
+    // cart.draw(context, None)?;
+    //
     // let t = Triangle::new(
+    //     Vertex::new(-0.5, 0.0, 0.0),
     //     Vertex::new(0.0, 0.5, 0.0),
-    //     Vertex::new(-0.5, -0.5, 0.0),
-    //     Vertex::new(0.5, -0.5, 0.0),
-    //     Colour::RED,
+    //     Vertex::new(0.5, 0.0, 0.0),
+    //     Colour::PINK,
+    //     program,
     // );
     //
-    // t.draw(&context, &program)?;
-    let b = Box::default();
-    b.draw(&context, &program)?;
+    // t.draw(&context, None)?;
 
+    let b = boxx::Box::new(0.5, -0.5, -0.5, -0.5, 0.5, 0.5, program);
+    b.draw(&context, None)?;
     return Ok(());
 }
