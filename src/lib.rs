@@ -7,10 +7,8 @@ mod triangle;
 mod utils;
 
 use cartesian_axis::CartesianAxis;
-use colour::Colour;
 use matrix::*;
 use primitives::{Draw, Vertex};
-use triangle::Triangle;
 use utils::{compile_shader, link_program};
 use web_sys::wasm_bindgen::prelude::*;
 use web_sys::{window, WebGl2RenderingContext, WebGlProgram};
@@ -33,8 +31,10 @@ pub fn main() -> Result<(), JsValue> {
 
         in vec3 position;
 
+        uniform mat4 model_matrix;
+
         void main() {
-            gl_Position = vec4(position, 1.0);
+            gl_Position = model_matrix * vec4(position, 1.0);
         }
         "##,
     )?;
@@ -84,6 +84,13 @@ fn run(
 ) -> Result<(), JsValue> {
     utils::clear_context(context);
 
+    let transforms = [
+        matrix::new_rotate_x_matrix(std::f32::consts::FRAC_PI_3),
+        matrix::new_rotate_z_matrix(std::f32::consts::FRAC_PI_6),
+    ];
+
+    let model_matrix = matrix::mat_mul_many(&transforms);
+
     // let cart = CartesianAxis::new(program);
     // cart.draw(context, None)?;
     //
@@ -111,6 +118,6 @@ fn run(
     // b.draw(&context, None)?;
     // t.draw(&context, None)?;
     let ca = CartesianAxis::new(context, program);
-    ca.draw(context, None)?;
+    ca.draw(context, Some(model_matrix))?;
     return Ok(());
 }

@@ -8,14 +8,16 @@ use web_sys::{
 use crate::colour::Colour;
 use crate::matrix::Matrix4F;
 use crate::primitives::Draw;
+use crate::ID_MATRIX;
 
 pub struct Box<'a> {
-    position_buffer:             WebGlBuffer,
-    indices_buffer:              WebGlBuffer,
-    position_attribute_location: i32,
-    colour_uniform_location:     WebGlUniformLocation,
-    colour:                      Colour,
-    program:                     &'a WebGlProgram,
+    position_buffer:               WebGlBuffer,
+    indices_buffer:                WebGlBuffer,
+    position_attribute_location:   i32,
+    colour_uniform_location:       WebGlUniformLocation,
+    colour:                        Colour,
+    model_matrix_uniform_location: WebGlUniformLocation,
+    program:                       &'a WebGlProgram,
 }
 
 impl<'a> Box<'a> {
@@ -115,12 +117,16 @@ impl<'a> Box<'a> {
             .get_uniform_location(&program, "colour")
             .expect("Missing \"colour\" uniform in program");
 
+        let model_matrix_uniform_location = context
+            .get_uniform_location(&program, "model_matrix")
+            .expect("Missing \"model_matrix\" uniform in program");
 
         return Box {
             position_buffer,
             indices_buffer,
             position_attribute_location,
             colour_uniform_location,
+            model_matrix_uniform_location,
             colour,
             program,
         };
@@ -131,7 +137,7 @@ impl<'a> Draw for Box<'a> {
     fn draw(
         &self,
         context: &web_sys::WebGl2RenderingContext,
-        _model_matrix: Option<Matrix4F>,
+        model_matrix: Option<Matrix4F>,
     ) -> Result<(), String> {
         context.bind_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
@@ -159,6 +165,13 @@ impl<'a> Draw for Box<'a> {
         context.use_program(Some(self.program));
 
         self.colour.uniform(context, &self.colour_uniform_location);
+
+        context.uniform_matrix4fv_with_f32_array(
+            Some(&self.model_matrix_uniform_location),
+            false,
+            &model_matrix.unwrap_or(ID_MATRIX),
+        );
+
 
         context.draw_elements_with_i32(
             WebGl2RenderingContext::TRIANGLES,

@@ -7,6 +7,7 @@ use web_sys::{
 
 use crate::colour::Colour;
 use crate::matrix::Matrix4F;
+use crate::ID_MATRIX;
 
 pub trait Draw {
     fn draw(
@@ -35,11 +36,12 @@ impl Vertex {
 
 
 pub struct Line<'a> {
-    position_buffer:             WebGlBuffer,
-    colour:                      Colour,
-    position_attribute_location: i32,
-    colour_uniform_location:     WebGlUniformLocation,
-    program:                     &'a WebGlProgram,
+    position_buffer:               WebGlBuffer,
+    colour:                        Colour,
+    position_attribute_location:   i32,
+    colour_uniform_location:       WebGlUniformLocation,
+    model_matrix_uniform_location: WebGlUniformLocation,
+    program:                       &'a WebGlProgram,
 }
 
 impl<'a> Line<'a> {
@@ -75,12 +77,17 @@ impl<'a> Line<'a> {
             .get_uniform_location(&program, "colour")
             .expect("Missing \"colour\" uniform in program");
 
+        let model_matrix_uniform_location = context
+            .get_uniform_location(&program, "model_matrix")
+            .expect("Missing \"model_matrix\" uniform in program");
+
         return Line {
             position_buffer: buffer,
             colour,
             program,
             position_attribute_location,
             colour_uniform_location,
+            model_matrix_uniform_location,
         };
     }
 }
@@ -89,7 +96,7 @@ impl<'a> Draw for Line<'a> {
     fn draw(
         &self,
         context: &web_sys::WebGl2RenderingContext,
-        _model_matrix: Option<Matrix4F>,
+        model_matrix: Option<Matrix4F>,
     ) -> Result<(), String> {
         context.bind_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
@@ -117,6 +124,12 @@ impl<'a> Draw for Line<'a> {
             self.colour.g,
             self.colour.b,
             self.colour.a,
+        );
+
+        context.uniform_matrix4fv_with_f32_array(
+            Some(&self.model_matrix_uniform_location),
+            false,
+            &model_matrix.unwrap_or(ID_MATRIX),
         );
 
         context.draw_arrays(WebGl2RenderingContext::LINES, 0, 2);

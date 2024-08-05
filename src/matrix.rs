@@ -45,10 +45,10 @@ pub fn new_rotate_y_matrix(angle: f32) -> Matrix4F {
 pub fn new_rotate_z_matrix(angle: f32) -> Matrix4F {
     [
         angle.cos(),
-        -angle.sin(),
-        0.,
-        0.,
         angle.sin(),
+        0.,
+        0.,
+        -angle.sin(),
         angle.cos(),
         0.,
         0.,
@@ -68,10 +68,18 @@ pub fn new_translate_matrix(x: f32, y: f32, z: f32) -> Matrix4F {
 }
 
 pub fn new_scale_matrix(width: f32, height: f32, depth: f32) -> Matrix4F {
-    [width, 0., 0., 0., 0., height, 0., 0., 0., 0., depth, 0., 0., 0., 0., 1.]
+    [
+        width, 0., 0., 0., 0., height, 0., 0., 0., 0., depth, 0., 0., 0., 0.,
+        1.,
+    ]
 }
 
-pub fn new_perspective_matrix(fov: f32, aspect_ratio: f32, near: f32, far: f32) -> Matrix4F {
+pub fn new_perspective_matrix(
+    fov: f32,
+    aspect_ratio: f32,
+    near: f32,
+    far: f32,
+) -> Matrix4F {
     let f = (fov / 2.0).tan().recip();
     let range_inverse = (near - far).recip();
 
@@ -168,5 +176,6 @@ pub fn mat_mul_many(matrices: &[Matrix4F]) -> Matrix4F {
 }
 
 pub const ID_MATRIX: Matrix4F = [
-    1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+    1.0,
 ];
