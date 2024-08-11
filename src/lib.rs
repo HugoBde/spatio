@@ -6,12 +6,21 @@ mod primitives;
 mod triangle;
 mod utils;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use cartesian_axis::CartesianAxis;
 use matrix::*;
-use primitives::{Draw, Vertex};
+use primitives::Draw;
 use utils::{compile_shader, link_program};
 use web_sys::wasm_bindgen::prelude::*;
-use web_sys::{window, WebGl2RenderingContext, WebGlProgram};
+use web_sys::{
+    window,
+    HtmlCanvasElement,
+    WebGl2RenderingContext,
+    WebGlProgram,
+    Window,
+};
 
 
 #[wasm_bindgen]
@@ -22,7 +31,12 @@ extern "C" {
 
 #[wasm_bindgen]
 pub fn main() -> Result<(), JsValue> {
-    let context = init()?;
+    let window = window().unwrap();
+
+    let document = window.document().unwrap();
+    let canvas = document.get_element_by_id("canvas").unwrap();
+    let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
+    let context = init(&canvas)?;
 
     let vert_shader = compile_shader(
         &context,
@@ -34,7 +48,7 @@ pub fn main() -> Result<(), JsValue> {
         uniform mat4 model_matrix;
 
         void main() {
-            gl_Position = model_matrix * vec4(position, 1.0);
+            gl_Position = model_matrix * vec4(position, 1.2);
         }
         "##,
     )?;
@@ -59,16 +73,12 @@ pub fn main() -> Result<(), JsValue> {
     context.enable(WebGl2RenderingContext::DEPTH_TEST);
     context.depth_func(WebGl2RenderingContext::LEQUAL);
 
-    run(&context, &program)?;
+    run(&window, &context, &program)?;
 
     return Ok(());
 }
 
-fn init() -> Result<WebGl2RenderingContext, JsValue> {
-    let window = window().unwrap();
-    let document = window.document().unwrap();
-    let canvas = document.get_element_by_id("canvas").unwrap();
-    let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
+fn init(canvas: &HtmlCanvasElement) -> Result<WebGl2RenderingContext, JsValue> {
     let context = canvas
         .get_context("webgl2")?
         .unwrap()
@@ -79,17 +89,11 @@ fn init() -> Result<WebGl2RenderingContext, JsValue> {
 }
 
 fn run(
+    window: &Window,
     context: &WebGl2RenderingContext,
     program: &WebGlProgram,
 ) -> Result<(), JsValue> {
     utils::clear_context(context);
-
-    let transforms = [
-        matrix::new_rotate_x_matrix(std::f32::consts::FRAC_PI_3),
-        matrix::new_rotate_z_matrix(std::f32::consts::FRAC_PI_6),
-    ];
-
-    let model_matrix = matrix::mat_mul_many(&transforms);
 
     // let cart = CartesianAxis::new(program);
     // cart.draw(context, None)?;
@@ -117,7 +121,50 @@ fn run(
     // );
     // b.draw(&context, None)?;
     // t.draw(&context, None)?;
-    let ca = CartesianAxis::new(context, program);
-    ca.draw(context, Some(model_matrix))?;
+    let t = Rc::new(RefCell::new(0.0));
+    let ca = Rc::new(CartesianAxis::new(&context, program.clone()));
+
+    let draw_routine = Rc::new(RefCell::new(None));
+    let draw_routine_launcher = draw_routine.clone();
+
+    {
+        let t = t.clone();
+        let ca = ca.clone();
+        let context = context.clone();
+
+        *draw_routine_launcher.borrow_mut() =
+            Some(Closure::<dyn FnMut()>::new(move || {
+                *t.borrow_mut() += 0.01;
+                context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+                context.clear(WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+
+                let transforms = [
+                    matrix::new_rotate_x_matrix(*t.borrow()),
+                    matrix::new_rotate_z_matrix(*t.borrow()),
+                ];
+                let model_matrix = matrix::mat_mul_many(&transforms);
+                ca.draw(&context, Some(model_matrix)).unwrap();
+
+                utils::request_animation_frame(
+                    draw_routine.borrow().as_ref().unwrap(),
+                );
+            }));
+    }
+
+    utils::request_animation_frame(
+        draw_routine_launcher.borrow().as_ref().unwrap(),
+    );
+
+
+    context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+    context.clear(WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+
+    let transforms = [
+        matrix::new_rotate_x_matrix(*t.borrow()),
+        matrix::new_rotate_z_matrix(*t.borrow()),
+    ];
+    let model_matrix = matrix::mat_mul_many(&transforms);
+    ca.draw(&context, Some(model_matrix)).unwrap();
+
     return Ok(());
 }

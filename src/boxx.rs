@@ -10,17 +10,17 @@ use crate::matrix::Matrix4F;
 use crate::primitives::Draw;
 use crate::ID_MATRIX;
 
-pub struct Box<'a> {
+pub struct Box {
     position_buffer:               WebGlBuffer,
     indices_buffer:                WebGlBuffer,
     position_attribute_location:   i32,
     colour_uniform_location:       WebGlUniformLocation,
     colour:                        Colour,
     model_matrix_uniform_location: WebGlUniformLocation,
-    program:                       &'a WebGlProgram,
+    program:                       WebGlProgram,
 }
 
-impl<'a> Box<'a> {
+impl Box {
     pub fn new(
         context: &WebGl2RenderingContext,
         top: f32,
@@ -30,8 +30,8 @@ impl<'a> Box<'a> {
         right: f32,
         back: f32,
         colour: Colour,
-        program: &'a WebGlProgram,
-    ) -> Box<'a> {
+        program: WebGlProgram,
+    ) -> Box {
         //     4------5
         //    /|     /|
         //   / |    / |
@@ -111,7 +111,7 @@ impl<'a> Box<'a> {
         }
 
         let position_attribute_location =
-            context.get_attrib_location(program, "position");
+            context.get_attrib_location(&program, "position");
 
         let colour_uniform_location = context
             .get_uniform_location(&program, "colour")
@@ -133,7 +133,7 @@ impl<'a> Box<'a> {
     }
 }
 
-impl<'a> Draw for Box<'a> {
+impl Draw for Box {
     fn draw(
         &self,
         context: &web_sys::WebGl2RenderingContext,
@@ -162,7 +162,7 @@ impl<'a> Draw for Box<'a> {
             Some(&self.indices_buffer),
         );
 
-        context.use_program(Some(self.program));
+        context.use_program(Some(&self.program));
 
         self.colour.uniform(context, &self.colour_uniform_location);
 

@@ -1,6 +1,12 @@
-use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
+use wasm_bindgen::closure::Closure;
+use wasm_bindgen::JsCast;
+use web_sys::{window, WebGl2RenderingContext, WebGlProgram, WebGlShader};
 
-pub fn compile_shader(context: &WebGl2RenderingContext, shader_type: u32, source: &str) -> Result<WebGlShader, String> {
+pub fn compile_shader(
+    context: &WebGl2RenderingContext,
+    shader_type: u32,
+    source: &str,
+) -> Result<WebGlShader, String> {
     let shader = context
         .create_shader(shader_type)
         .ok_or_else(|| String::from("Unable to create shader object"))?;
@@ -40,12 +46,19 @@ pub fn link_program(
         return Ok(program);
     }
 
-    return Err(context
-        .get_program_info_log(&program)
-        .unwrap_or_else(|| String::from("Unknown error creating program object")));
+    return Err(context.get_program_info_log(&program).unwrap_or_else(|| {
+        String::from("Unknown error creating program object")
+    }));
 }
 
 pub fn clear_context(context: &WebGl2RenderingContext) {
     context.clear_color(0.0, 0.0, 0.0, 1.0);
     context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+}
+
+pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
+    window()
+        .unwrap()
+        .request_animation_frame(f.as_ref().unchecked_ref())
+        .unwrap();
 }
