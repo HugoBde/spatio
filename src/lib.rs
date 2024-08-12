@@ -119,7 +119,7 @@ fn run(
             .dyn_into()
             .unwrap();
 
-        slider.set_onchange(Some(input_event_handler.as_ref().unchecked_ref()));
+        slider.set_oninput(Some(input_event_handler.as_ref().unchecked_ref()));
 
         // Forget about the event handler so it doesn't get dropped
         input_event_handler.forget();
@@ -142,7 +142,7 @@ fn run(
             .dyn_into()
             .unwrap();
 
-        slider.set_onchange(Some(input_event_handler.as_ref().unchecked_ref()));
+        slider.set_oninput(Some(input_event_handler.as_ref().unchecked_ref()));
 
         // Forget about the event handler so it doesn't get dropped
         input_event_handler.forget();
@@ -164,7 +164,7 @@ fn run(
             .dyn_into()
             .unwrap();
 
-        slider.set_onchange(Some(input_event_handler.as_ref().unchecked_ref()));
+        slider.set_oninput(Some(input_event_handler.as_ref().unchecked_ref()));
 
         // Forget about the event handler so it doesn't get dropped
         input_event_handler.forget();
