@@ -7,6 +7,7 @@ mod triangle;
 mod utils;
 
 use std::cell::RefCell;
+use std::f32::consts::{FRAC_PI_4, FRAC_PI_8};
 use std::rc::Rc;
 
 use cartesian_axis::CartesianAxis;
@@ -16,7 +17,10 @@ use utils::{compile_shader, link_program};
 use web_sys::wasm_bindgen::prelude::*;
 use web_sys::{
     window,
+    Document,
     HtmlCanvasElement,
+    HtmlInputElement,
+    InputEvent,
     WebGl2RenderingContext,
     WebGlProgram,
     Window,
@@ -73,7 +77,7 @@ pub fn main() -> Result<(), JsValue> {
     context.enable(WebGl2RenderingContext::DEPTH_TEST);
     context.depth_func(WebGl2RenderingContext::LEQUAL);
 
-    run(&window, &context, &program)?;
+    run(&document, &context, &program)?;
 
     return Ok(());
 }
@@ -89,58 +93,101 @@ fn init(canvas: &HtmlCanvasElement) -> Result<WebGl2RenderingContext, JsValue> {
 }
 
 fn run(
-    window: &Window,
+    document: &Document,
     context: &WebGl2RenderingContext,
     program: &WebGlProgram,
 ) -> Result<(), JsValue> {
-    utils::clear_context(context);
-
-    // let cart = CartesianAxis::new(program);
-    // cart.draw(context, None)?;
-    //
-    // let t = Triangle::new(
-    //     context,
-    //     Vertex::new(-0.5, 0.0, -0.3),
-    //     Vertex::new(0.0, 0.5, -0.6),
-    //     Vertex::new(0.5, 0.0, -0.6),
-    //     Colour::PINK,
-    //     program,
-    // );
-    //
-    //
-    // let b = boxx::Box::new(
-    //     context,
-    //     0.5,
-    //     -0.5,
-    //     -0.5,
-    //     -0.5,
-    //     0.5,
-    //     0.5,
-    //     Colour::RED,
-    //     program,
-    // );
-    // b.draw(&context, None)?;
-    // t.draw(&context, None)?;
-    let t = Rc::new(RefCell::new(0.0));
+    let x = Rc::new(RefCell::new(0.0));
+    let y = Rc::new(RefCell::new(0.0));
+    let z = Rc::new(RefCell::new(0.0));
     let ca = Rc::new(CartesianAxis::new(&context, program.clone()));
+
+    {
+        let x = x.clone();
+
+        // create mouse move event handler for drag rotation
+        let input_event_handler =
+            Closure::<dyn FnMut(InputEvent)>::new(move |event: InputEvent| {
+                let slider: HtmlInputElement =
+                    event.target().unwrap().dyn_into().unwrap();
+                *x.borrow_mut() = slider.value_as_number() as f32;
+            });
+
+        let slider: HtmlInputElement = document
+            .get_element_by_id("slider_x")
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+
+        slider.set_onchange(Some(input_event_handler.as_ref().unchecked_ref()));
+
+        // Forget about the event handler so it doesn't get dropped
+        input_event_handler.forget();
+    }
+
+    {
+        let y = y.clone();
+
+        // create mouse move event handler for drag rotation
+        let input_event_handler =
+            Closure::<dyn FnMut(InputEvent)>::new(move |event: InputEvent| {
+                let slider: HtmlInputElement =
+                    event.target().unwrap().dyn_into().unwrap();
+                *y.borrow_mut() = slider.value_as_number() as f32;
+            });
+
+        let slider: HtmlInputElement = document
+            .get_element_by_id("slider_y")
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+
+        slider.set_onchange(Some(input_event_handler.as_ref().unchecked_ref()));
+
+        // Forget about the event handler so it doesn't get dropped
+        input_event_handler.forget();
+    }
+    {
+        let z = z.clone();
+
+        // create mouse move event handler for drag rotation
+        let input_event_handler =
+            Closure::<dyn FnMut(InputEvent)>::new(move |event: InputEvent| {
+                let slider: HtmlInputElement =
+                    event.target().unwrap().dyn_into().unwrap();
+                *z.borrow_mut() = slider.value_as_number() as f32;
+            });
+
+        let slider: HtmlInputElement = document
+            .get_element_by_id("slider_z")
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+
+        slider.set_onchange(Some(input_event_handler.as_ref().unchecked_ref()));
+
+        // Forget about the event handler so it doesn't get dropped
+        input_event_handler.forget();
+    }
 
     let draw_routine = Rc::new(RefCell::new(None));
     let draw_routine_launcher = draw_routine.clone();
 
+    // Draw loop
     {
-        let t = t.clone();
+        let x = x.clone();
+        let y = y.clone();
+        let z = z.clone();
         let ca = ca.clone();
         let context = context.clone();
 
         *draw_routine_launcher.borrow_mut() =
             Some(Closure::<dyn FnMut()>::new(move || {
-                *t.borrow_mut() += 0.01;
-                context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-                context.clear(WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-
+                utils::clear_context(&context);
                 let transforms = [
-                    matrix::new_rotate_x_matrix(*t.borrow()),
-                    matrix::new_rotate_z_matrix(*t.borrow()),
+                    matrix::new_rotate_x_matrix(*x.borrow()),
+                    matrix::new_rotate_y_matrix(*y.borrow()),
+                    matrix::new_rotate_z_matrix(*z.borrow()),
                 ];
                 let model_matrix = matrix::mat_mul_many(&transforms);
                 ca.draw(&context, Some(model_matrix)).unwrap();
@@ -151,20 +198,11 @@ fn run(
             }));
     }
 
+    // Launch the loop
     utils::request_animation_frame(
         draw_routine_launcher.borrow().as_ref().unwrap(),
     );
 
-
-    context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-    context.clear(WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-
-    let transforms = [
-        matrix::new_rotate_x_matrix(*t.borrow()),
-        matrix::new_rotate_z_matrix(*t.borrow()),
-    ];
-    let model_matrix = matrix::mat_mul_many(&transforms);
-    ca.draw(&context, Some(model_matrix)).unwrap();
 
     return Ok(());
 }

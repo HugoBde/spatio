@@ -54,6 +54,7 @@ pub fn link_program(
 pub fn clear_context(context: &WebGl2RenderingContext) {
     context.clear_color(0.0, 0.0, 0.0, 1.0);
     context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+    context.clear(WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 }
 
 pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
