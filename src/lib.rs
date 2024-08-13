@@ -77,7 +77,7 @@ pub fn main() -> Result<(), JsValue> {
     context.enable(WebGl2RenderingContext::DEPTH_TEST);
     context.depth_func(WebGl2RenderingContext::LEQUAL);
 
-    run(&document, &context, &program)?;
+    run(&document, &canvas, &context, &program)?;
 
     return Ok(());
 }
@@ -88,12 +88,13 @@ fn init(canvas: &HtmlCanvasElement) -> Result<WebGl2RenderingContext, JsValue> {
         .unwrap()
         .dyn_into::<WebGl2RenderingContext>()?;
 
-    context.viewport(0, 0, 2000, 2000);
+    context.viewport(0, 0, 800, 800);
     return Ok(context);
 }
 
 fn run(
     document: &Document,
+    canvas: &HtmlCanvasElement,
     context: &WebGl2RenderingContext,
     program: &WebGlProgram,
 ) -> Result<(), JsValue> {
@@ -180,10 +181,12 @@ fn run(
         let z = z.clone();
         let ca = ca.clone();
         let context = context.clone();
+        let canvas = canvas.clone();
 
         *draw_routine_launcher.borrow_mut() =
             Some(Closure::<dyn FnMut()>::new(move || {
                 utils::clear_context(&context);
+                utils::resize_canvas(&canvas, &context);
                 let transforms = [
                     matrix::new_rotate_x_matrix(*x.borrow()),
                     matrix::new_rotate_y_matrix(*y.borrow()),
@@ -202,7 +205,6 @@ fn run(
     utils::request_animation_frame(
         draw_routine_launcher.borrow().as_ref().unwrap(),
     );
-
 
     return Ok(());
 }

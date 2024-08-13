@@ -1,6 +1,12 @@
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
-use web_sys::{window, WebGl2RenderingContext, WebGlProgram, WebGlShader};
+use web_sys::{
+    window,
+    HtmlCanvasElement,
+    WebGl2RenderingContext,
+    WebGlProgram,
+    WebGlShader,
+};
 
 pub fn compile_shader(
     context: &WebGl2RenderingContext,
@@ -62,4 +68,20 @@ pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
         .unwrap()
         .request_animation_frame(f.as_ref().unchecked_ref())
         .unwrap();
+}
+
+pub fn resize_canvas(
+    canvas: &HtmlCanvasElement,
+    context: &WebGl2RenderingContext,
+) {
+    let pixel_width = canvas.client_width();
+    let pixel_height = canvas.client_height();
+
+    if pixel_width as u32 != canvas.width() ||
+        pixel_height as u32 != canvas.height()
+    {
+        canvas.set_width(pixel_width as u32);
+        canvas.set_height(pixel_height as u32);
+        context.viewport(0, 0, 800, 800);
+    }
 }
