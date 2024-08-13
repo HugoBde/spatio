@@ -70,10 +70,10 @@ impl<'a> Draw for CartesianAxis {
     fn draw(
         &self,
         context: &WebGl2RenderingContext,
-        model_matrix: Option<Matrix4F>,
+        uniform_matrix: Option<Matrix4F>,
     ) -> Result<(), String> {
         for b in &self.boxes {
-            b.draw(context, model_matrix)?;
+            b.draw(context, uniform_matrix)?;
         }
         return Ok(());
     }

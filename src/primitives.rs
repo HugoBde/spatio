@@ -13,7 +13,7 @@ pub trait Draw {
     fn draw(
         &self,
         context: &WebGl2RenderingContext,
-        model_matrix: Option<Matrix4F>,
+        uniform_matrix: Option<Matrix4F>,
     ) -> Result<(), String>;
 }
 
@@ -78,8 +78,8 @@ impl<'a> Line<'a> {
             .expect("Missing \"colour\" uniform in program");
 
         let model_matrix_uniform_location = context
-            .get_uniform_location(&program, "model_matrix")
-            .expect("Missing \"model_matrix\" uniform in program");
+            .get_uniform_location(&program, "uniform_matrix")
+            .expect("Missing \"uniform_matrix\" uniform in program");
 
         return Line {
             position_buffer: buffer,
@@ -96,7 +96,7 @@ impl<'a> Draw for Line<'a> {
     fn draw(
         &self,
         context: &web_sys::WebGl2RenderingContext,
-        model_matrix: Option<Matrix4F>,
+        uniform_matrix: Option<Matrix4F>,
     ) -> Result<(), String> {
         context.bind_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
@@ -129,7 +129,7 @@ impl<'a> Draw for Line<'a> {
         context.uniform_matrix4fv_with_f32_array(
             Some(&self.model_matrix_uniform_location),
             false,
-            &model_matrix.unwrap_or(ID_MATRIX),
+            &uniform_matrix.unwrap_or(ID_MATRIX),
         );
 
         context.draw_arrays(WebGl2RenderingContext::LINES, 0, 2);

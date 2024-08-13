@@ -1,8 +1,13 @@
+use std::rc::Rc;
+
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
 use web_sys::{
     window,
+    Document,
     HtmlCanvasElement,
+    HtmlInputElement,
+    InputEvent,
     WebGl2RenderingContext,
     WebGlProgram,
     WebGlShader,
@@ -84,4 +89,16 @@ pub fn resize_canvas(
         canvas.set_height(pixel_height as u32);
         context.viewport(0, 0, 800, 800);
     }
+}
+
+pub fn create_input_handler_f32(
+    document: &Document,
+    id: &str,
+    handler: Box<dyn FnMut(InputEvent)>,
+) {
+    let js_closure = Closure::<dyn FnMut(InputEvent)>::new(handler);
+    let input: HtmlInputElement =
+        document.get_element_by_id(id).unwrap().dyn_into().unwrap();
+    input.set_oninput(Some(js_closure.as_ref().unchecked_ref()));
+    js_closure.forget();
 }

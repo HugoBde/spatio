@@ -68,7 +68,7 @@ impl<'a> Draw for Triangle<'a> {
     fn draw(
         &self,
         context: &web_sys::WebGl2RenderingContext,
-        _model_matrix: Option<Matrix4F>,
+        _uniform_matrix: Option<Matrix4F>,
     ) -> Result<(), String> {
         context.bind_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,

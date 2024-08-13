@@ -7,7 +7,7 @@ mod triangle;
 mod utils;
 
 use std::cell::RefCell;
-use std::f32::consts::{FRAC_PI_4, FRAC_PI_8};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_8};
 use std::rc::Rc;
 
 use cartesian_axis::CartesianAxis;
@@ -49,10 +49,10 @@ pub fn main() -> Result<(), JsValue> {
 
         in vec3 position;
 
-        uniform mat4 model_matrix;
+        uniform mat4 u_matrix;
 
         void main() {
-            gl_Position = model_matrix * vec4(position, 1.2);
+            gl_Position = u_matrix * vec4(position, 1.0);
         }
         "##,
     )?;
@@ -106,69 +106,43 @@ fn run(
     {
         let x = x.clone();
 
-        // create mouse move event handler for drag rotation
-        let input_event_handler =
-            Closure::<dyn FnMut(InputEvent)>::new(move |event: InputEvent| {
+        utils::create_input_handler_f32(
+            document,
+            "slider_x",
+            Box::new(move |event: InputEvent| {
                 let slider: HtmlInputElement =
                     event.target().unwrap().dyn_into().unwrap();
                 *x.borrow_mut() = slider.value_as_number() as f32;
-            });
-
-        let slider: HtmlInputElement = document
-            .get_element_by_id("slider_x")
-            .unwrap()
-            .dyn_into()
-            .unwrap();
-
-        slider.set_oninput(Some(input_event_handler.as_ref().unchecked_ref()));
-
-        // Forget about the event handler so it doesn't get dropped
-        input_event_handler.forget();
+            }),
+        );
     }
 
     {
         let y = y.clone();
 
-        // create mouse move event handler for drag rotation
-        let input_event_handler =
-            Closure::<dyn FnMut(InputEvent)>::new(move |event: InputEvent| {
+        utils::create_input_handler_f32(
+            document,
+            "slider_y",
+            Box::new(move |event: InputEvent| {
                 let slider: HtmlInputElement =
                     event.target().unwrap().dyn_into().unwrap();
                 *y.borrow_mut() = slider.value_as_number() as f32;
-            });
-
-        let slider: HtmlInputElement = document
-            .get_element_by_id("slider_y")
-            .unwrap()
-            .dyn_into()
-            .unwrap();
-
-        slider.set_oninput(Some(input_event_handler.as_ref().unchecked_ref()));
-
-        // Forget about the event handler so it doesn't get dropped
-        input_event_handler.forget();
+            }),
+        );
     }
+
     {
         let z = z.clone();
 
-        // create mouse move event handler for drag rotation
-        let input_event_handler =
-            Closure::<dyn FnMut(InputEvent)>::new(move |event: InputEvent| {
+        utils::create_input_handler_f32(
+            document,
+            "slider_z",
+            Box::new(move |event: InputEvent| {
                 let slider: HtmlInputElement =
                     event.target().unwrap().dyn_into().unwrap();
                 *z.borrow_mut() = slider.value_as_number() as f32;
-            });
-
-        let slider: HtmlInputElement = document
-            .get_element_by_id("slider_z")
-            .unwrap()
-            .dyn_into()
-            .unwrap();
-
-        slider.set_oninput(Some(input_event_handler.as_ref().unchecked_ref()));
-
-        // Forget about the event handler so it doesn't get dropped
-        input_event_handler.forget();
+            }),
+        );
     }
 
     let draw_routine = Rc::new(RefCell::new(None));
@@ -192,8 +166,8 @@ fn run(
                     matrix::new_rotate_y_matrix(*y.borrow()),
                     matrix::new_rotate_z_matrix(*z.borrow()),
                 ];
-                let model_matrix = matrix::mat_mul_many(&transforms);
-                ca.draw(&context, Some(model_matrix)).unwrap();
+                let uniform_matrix = matrix::mat_mul_many(&transforms);
+                ca.draw(&context, Some(uniform_matrix)).unwrap();
 
                 utils::request_animation_frame(
                     draw_routine.borrow().as_ref().unwrap(),

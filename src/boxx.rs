@@ -11,13 +11,13 @@ use crate::primitives::Draw;
 use crate::ID_MATRIX;
 
 pub struct Box {
-    position_buffer:               WebGlBuffer,
-    indices_buffer:                WebGlBuffer,
-    position_attribute_location:   i32,
-    colour_uniform_location:       WebGlUniformLocation,
-    colour:                        Colour,
-    model_matrix_uniform_location: WebGlUniformLocation,
-    program:                       WebGlProgram,
+    position_buffer:             WebGlBuffer,
+    indices_buffer:              WebGlBuffer,
+    position_attribute_location: i32,
+    colour_uniform_location:     WebGlUniformLocation,
+    colour:                      Colour,
+    uniform_matrix_location:     WebGlUniformLocation,
+    program:                     WebGlProgram,
 }
 
 impl Box {
@@ -117,16 +117,16 @@ impl Box {
             .get_uniform_location(&program, "colour")
             .expect("Missing \"colour\" uniform in program");
 
-        let model_matrix_uniform_location = context
-            .get_uniform_location(&program, "model_matrix")
-            .expect("Missing \"model_matrix\" uniform in program");
+        let uniform_matrix_location = context
+            .get_uniform_location(&program, "u_matrix")
+            .expect("Missing \"u_matrix\" uniform in program");
 
         return Box {
             position_buffer,
             indices_buffer,
             position_attribute_location,
             colour_uniform_location,
-            model_matrix_uniform_location,
+            uniform_matrix_location,
             colour,
             program,
         };
@@ -137,7 +137,7 @@ impl Draw for Box {
     fn draw(
         &self,
         context: &web_sys::WebGl2RenderingContext,
-        model_matrix: Option<Matrix4F>,
+        uniform_matrix: Option<Matrix4F>,
     ) -> Result<(), String> {
         context.bind_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
@@ -167,9 +167,9 @@ impl Draw for Box {
         self.colour.uniform(context, &self.colour_uniform_location);
 
         context.uniform_matrix4fv_with_f32_array(
-            Some(&self.model_matrix_uniform_location),
+            Some(&self.uniform_matrix_location),
             false,
-            &model_matrix.unwrap_or(ID_MATRIX),
+            &uniform_matrix.unwrap_or(ID_MATRIX),
         );
 
 
