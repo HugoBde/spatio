@@ -7,7 +7,7 @@ mod triangle;
 mod utils;
 
 use std::cell::RefCell;
-use std::f32::consts::FRAC_PI_3;
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8};
 use std::rc::Rc;
 
 use cartesian_axis::CartesianAxis;
@@ -97,9 +97,15 @@ fn run(
     context: &WebGl2RenderingContext,
     program: &WebGlProgram,
 ) -> Result<(), JsValue> {
+    let t = Rc::new(RefCell::new(0.0));
+
     let x = Rc::new(RefCell::new(0.0));
     let y = Rc::new(RefCell::new(0.0));
     let z = Rc::new(RefCell::new(0.0));
+
+    let tx = Rc::new(RefCell::new(0.0));
+    let ty = Rc::new(RefCell::new(0.0));
+    let tz = Rc::new(RefCell::new(0.0));
 
     let fov = Rc::new(RefCell::new(FRAC_PI_3));
     let near = Rc::new(RefCell::new(1.0));
@@ -145,6 +151,47 @@ fn run(
                 let slider: HtmlInputElement =
                     event.target().unwrap().dyn_into().unwrap();
                 *z.borrow_mut() = slider.value_as_number() as f32;
+            }),
+        );
+    }
+
+    {
+        let tx = tx.clone();
+        utils::create_input_handler_f32(
+            document,
+            "slider_tx",
+            Box::new(move |event: InputEvent| {
+                let slider: HtmlInputElement =
+                    event.target().unwrap().dyn_into().unwrap();
+                *tx.borrow_mut() = slider.value_as_number() as f32;
+            }),
+        );
+    }
+
+    {
+        let ty = ty.clone();
+
+        utils::create_input_handler_f32(
+            document,
+            "slider_ty",
+            Box::new(move |event: InputEvent| {
+                let slider: HtmlInputElement =
+                    event.target().unwrap().dyn_into().unwrap();
+                *ty.borrow_mut() = slider.value_as_number() as f32;
+            }),
+        );
+    }
+
+    {
+        let tz = tz.clone();
+
+        utils::create_input_handler_f32(
+            document,
+            "slider_tz",
+            Box::new(move |event: InputEvent| {
+                let slider: HtmlInputElement =
+                    event.target().unwrap().dyn_into().unwrap();
+                *tz.borrow_mut() = slider.value_as_number() as f32;
             }),
         );
     }
@@ -196,12 +243,20 @@ fn run(
 
     // Draw loop
     {
-        let x = x.clone();
-        let y = y.clone();
-        let z = z.clone();
+        // let x = x.clone();
+        // let y = y.clone();
+        // let z = z.clone();
+        //
+        // let tx = tx.clone();
+        // let ty = ty.clone();
+        // let tz = tz.clone();
+
+        let t = t.clone();
+
         let fov = fov.clone();
         let near = near.clone();
         let far = far.clone();
+
         let ca = ca.clone();
         let context = context.clone();
         let canvas = canvas.clone();
@@ -210,17 +265,27 @@ fn run(
             Some(Closure::<dyn FnMut()>::new(move || {
                 utils::clear_context(&context);
                 utils::resize_canvas(&canvas, &context);
+                *t.borrow_mut() += 0.02;
+                let t = *t.borrow();
+
                 let transforms = [
-                    // matrix::perspective_matrix(
-                    //     *fov.borrow(),
-                    //     1.0,
-                    //     *near.borrow(),
-                    //     *far.borrow(),
-                    // ),
-                    matrix::translate_matrix(0.5, 0.3, -0.2),
-                    matrix::rotate_x_matrix(*x.borrow()),
-                    matrix::rotate_y_matrix(*y.borrow()),
-                    matrix::rotate_z_matrix(*z.borrow()),
+                    matrix::perspective_matrix(
+                        *fov.borrow(),
+                        1.0,
+                        *near.borrow(),
+                        *far.borrow(),
+                    ),
+                    matrix::translate_matrix(
+                        // *tx.borrow(),
+                        // *ty.borrow(),
+                        // *tz.borrow(),
+                        (t + FRAC_PI_8).sin() * 0.8,
+                        (t + FRAC_PI_6).sin() * 0.8,
+                        -3.0,
+                    ),
+                    matrix::rotate_x_matrix(t + FRAC_PI_4),
+                    matrix::rotate_y_matrix(t + FRAC_PI_3),
+                    matrix::rotate_z_matrix(t + FRAC_PI_2),
                 ];
                 let uniform_matrix = matrix::mat_mul_many(&transforms);
                 log(&format!(
@@ -247,7 +312,10 @@ fn run(
                     uniform_matrix[14],
                     uniform_matrix[15],
                 ));
+
                 let v = mat_vec_mul(uniform_matrix, [1.0, 0.01, 0.01, 1.0]);
+                let v = vec_scalar_div(v, v[3]);
+                log(&format!("tz = {}", *tz.borrow()));
                 log(&format!(
                     " | {:.2} {:.2} {:.2} {:.2} | ",
                     v[0], v[1], v[2], v[3]

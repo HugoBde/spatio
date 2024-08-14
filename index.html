@@ -43,22 +43,40 @@
       left: 50px;
     }
 
-    #slider_fov {
+    #slider_tx {
       position: absolute;
       bottom: 50px;
       left: 250px;
     }
 
-    #slider_near {
+    #slider_ty {
       position: absolute;
       bottom: 30px;
       left: 250px;
     }
 
-    #slider_far {
+    #slider_tz {
       position: absolute;
       bottom: 10px;
       left: 250px;
+    }
+
+    #slider_fov {
+      position: absolute;
+      bottom: 50px;
+      left: 450px;
+    }
+
+    #slider_near {
+      position: absolute;
+      bottom: 30px;
+      left: 450px;
+    }
+
+    #slider_far {
+      position: absolute;
+      bottom: 10px;
+      left: 450px;
     }
   </style>
 
@@ -68,9 +86,15 @@
   <script src="index.js" type="module">
   </script>
   <canvas id="canvas" width="800" height="800"></canvas>
-  <input id="slider_x" type="range" min="0" , max="3.14" step="0.1" name="t" value="0" />
-  <input id="slider_y" type="range" min="0" , max="3.14" step="0.1" name="t" value="0" />
-  <input id="slider_z" type="range" min="0" , max="3.14" step="0.1" name="t" value="0" />
+
+  <input id="slider_tx" type="range" min="-1" , max="1" step="0.1" name="t" value="0" />
+  <input id="slider_ty" type="range" min="-1" , max="1" step="0.1" name="t" value="0" />
+  <input id="slider_tz" type="range" min="-20" , max="-1" step="0.1" name="t" value="-1" />
+
+  <input id="slider_x" type="range" min="-3.14" , max="3.14" step="0.1" name="t" value="0" />
+  <input id="slider_y" type="range" min="-3.14" , max="3.14" step="0.1" name="t" value="0" />
+  <input id="slider_z" type="range" min="-3.14" , max="3.14" step="0.1" name="t" value="0" />
+
   <input id="slider_fov" type="range" min="0" , max="3.14" step="0.1" name="t" value="1" />
   <input id="slider_near" type="range" min="-2" , max="2" step="0.1" name="t" value="1" />
   <input id="slider_far" type="range" min="-2000" , max="2000" step="0.1" name="t" value="-2000" />

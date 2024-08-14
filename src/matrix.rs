@@ -181,3 +181,12 @@ pub fn mat_vec_mul(mat: Matrix4F, vec: Vector4F) -> Vector4F {
         mat[3] * vec[0] + mat[7] * vec[1] + mat[11] * vec[2] + mat[15] * vec[3],
     ]
 }
+
+pub fn vec_scalar_div(vec: Vector4F, scalar: f32) -> Vector4F {
+    return [
+        vec[0] / scalar,
+        vec[1] / scalar,
+        vec[2] / scalar,
+        vec[3] / scalar,
+    ];
+}
