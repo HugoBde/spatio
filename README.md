@@ -7,7 +7,7 @@ This is going to help me introduce readers of my blog articles to the way qubits
 # Build & run
 - Clone the repo
 - hit'em with the `cargo install`
-- maybe need to install `cargo install wasm-pack`. not sure, your problem
+- maybe need to `cargo install wasm-pack`. not sure, your problem
 - `wasm-build target --target web`
 - Start an HTTP server in the root directory and open the `index.html`
 - Should work
