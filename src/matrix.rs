@@ -1,6 +1,7 @@
 pub type Matrix4F = [f32; 16];
+pub type Vector4F = [f32; 4];
 
-pub fn new_rotate_x_matrix(angle: f32) -> Matrix4F {
+pub fn rotate_x_matrix(angle: f32) -> Matrix4F {
     [
         1.,
         0.,
@@ -21,7 +22,7 @@ pub fn new_rotate_x_matrix(angle: f32) -> Matrix4F {
     ]
 }
 
-pub fn new_rotate_y_matrix(angle: f32) -> Matrix4F {
+pub fn rotate_y_matrix(angle: f32) -> Matrix4F {
     [
         angle.cos(),
         0.,
@@ -42,7 +43,7 @@ pub fn new_rotate_y_matrix(angle: f32) -> Matrix4F {
     ]
 }
 
-pub fn new_rotate_z_matrix(angle: f32) -> Matrix4F {
+pub fn rotate_z_matrix(angle: f32) -> Matrix4F {
     [
         angle.cos(),
         angle.sin(),
@@ -63,18 +64,19 @@ pub fn new_rotate_z_matrix(angle: f32) -> Matrix4F {
     ]
 }
 
-pub fn new_translate_matrix(x: f32, y: f32, z: f32) -> Matrix4F {
+pub fn translate_matrix(x: f32, y: f32, z: f32) -> Matrix4F {
     [1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., x, y, z, 1.]
 }
 
-pub fn new_scale_matrix(width: f32, height: f32, depth: f32) -> Matrix4F {
+#[allow(dead_code)]
+pub fn scale_matrix(width: f32, height: f32, depth: f32) -> Matrix4F {
     [
         width, 0., 0., 0., 0., height, 0., 0., 0., 0., depth, 0., 0., 0., 0.,
         1.,
     ]
 }
 
-pub fn new_perspective_matrix(
+pub fn perspective_matrix(
     fov: f32,
     aspect_ratio: f32,
     near: f32,
@@ -104,8 +106,6 @@ pub fn new_perspective_matrix(
 }
 
 pub fn mat_mul(a: &Matrix4F, b: &Matrix4F) -> Matrix4F {
-    let mut result = [0.0; 16];
-
     let a00 = a[0];
     let a01 = a[1];
     let a02 = a[2];
@@ -123,48 +123,41 @@ pub fn mat_mul(a: &Matrix4F, b: &Matrix4F) -> Matrix4F {
     let a32 = a[14];
     let a33 = a[15];
 
-    // Cache only the current line of the second matrix
-    let mut b0 = b[0];
-    let mut b1 = b[1];
-    let mut b2 = b[2];
-    let mut b3 = b[3];
+    let b00 = b[0];
+    let b01 = b[1];
+    let b02 = b[2];
+    let b03 = b[3];
+    let b10 = b[4];
+    let b11 = b[5];
+    let b12 = b[6];
+    let b13 = b[7];
+    let b20 = b[8];
+    let b21 = b[9];
+    let b22 = b[10];
+    let b23 = b[11];
+    let b30 = b[12];
+    let b31 = b[13];
+    let b32 = b[14];
+    let b33 = b[15];
 
-    result[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-    result[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-    result[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-    result[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-    b0 = b[4];
-    b1 = b[5];
-    b2 = b[6];
-    b3 = b[7];
-
-    result[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-    result[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-    result[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-    result[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-    b0 = b[8];
-    b1 = b[9];
-    b2 = b[10];
-    b3 = b[11];
-
-    result[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-    result[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-    result[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-    result[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-    b0 = b[12];
-    b1 = b[13];
-    b2 = b[14];
-    b3 = b[15];
-
-    result[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-    result[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-    result[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-    result[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-    return result;
+    return [
+        b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30,
+        b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31,
+        b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32,
+        b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33,
+        b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30,
+        b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31,
+        b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32,
+        b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33,
+        b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30,
+        b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31,
+        b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32,
+        b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33,
+        b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30,
+        b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31,
+        b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32,
+        b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33,
+    ];
 }
 
 pub fn mat_mul_many(matrices: &[Matrix4F]) -> Matrix4F {
@@ -179,3 +172,12 @@ pub const ID_MATRIX: Matrix4F = [
     1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
     1.0,
 ];
+
+pub fn mat_vec_mul(mat: Matrix4F, vec: Vector4F) -> Vector4F {
+    [
+        mat[0] * vec[0] + mat[4] * vec[1] + mat[8] * vec[2] + mat[12] * vec[3],
+        mat[1] * vec[0] + mat[5] * vec[1] + mat[9] * vec[2] + mat[13] * vec[3],
+        mat[2] * vec[0] + mat[6] * vec[1] + mat[10] * vec[2] + mat[14] * vec[3],
+        mat[3] * vec[0] + mat[7] * vec[1] + mat[11] * vec[2] + mat[15] * vec[3],
+    ]
+}

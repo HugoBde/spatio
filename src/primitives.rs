@@ -18,12 +18,14 @@ pub trait Draw {
 }
 
 #[derive(Clone, Copy)]
+#[allow(dead_code)]
 pub struct Vertex {
     pub x: f32,
     pub y: f32,
     pub z: f32,
 }
 
+#[allow(dead_code)]
 impl Vertex {
     pub fn new(x: f32, y: f32, z: f32) -> Vertex {
         Vertex {
@@ -44,6 +46,7 @@ pub struct Line<'a> {
     program:                       &'a WebGlProgram,
 }
 
+#[allow(dead_code)]
 impl<'a> Line<'a> {
     pub fn new(
         context: &WebGl2RenderingContext,

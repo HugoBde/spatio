@@ -17,6 +17,7 @@ pub struct Triangle<'a> {
     program:                     &'a WebGlProgram,
 }
 
+#[allow(dead_code)]
 impl<'a> Triangle<'a> {
     pub fn new(
         context: &WebGl2RenderingContext,
