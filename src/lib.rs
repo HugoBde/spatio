@@ -1,3 +1,4 @@
+mod ball;
 mod boxx;
 mod cartesian_axis;
 mod colour;
@@ -7,12 +8,13 @@ mod triangle;
 mod utils;
 
 use std::cell::RefCell;
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8};
+use std::f32::consts::FRAC_PI_3;
 use std::rc::Rc;
 
-use cartesian_axis::CartesianAxis;
+use ball::Ball;
+use colour::Colour;
 use matrix::*;
-use primitives::Draw;
+use primitives::{Draw, Vertex};
 use utils::{compile_shader, link_program};
 use web_sys::wasm_bindgen::prelude::*;
 use web_sys::{
@@ -97,21 +99,17 @@ fn run(
     context: &WebGl2RenderingContext,
     program: &WebGlProgram,
 ) -> Result<(), JsValue> {
-    let t = Rc::new(RefCell::new(0.0));
-
     let x = Rc::new(RefCell::new(0.0));
     let y = Rc::new(RefCell::new(0.0));
     let z = Rc::new(RefCell::new(0.0));
 
     let tx = Rc::new(RefCell::new(0.0));
     let ty = Rc::new(RefCell::new(0.0));
-    let tz = Rc::new(RefCell::new(0.0));
+    let tz = Rc::new(RefCell::new(-3.0));
 
     let fov = Rc::new(RefCell::new(FRAC_PI_3));
     let near = Rc::new(RefCell::new(1.0));
     let far = Rc::new(RefCell::new(-2000.0));
-
-    let ca = Rc::new(CartesianAxis::new(&context, program.clone()));
 
     {
         let x = x.clone();
@@ -238,35 +236,48 @@ fn run(
         );
     }
 
+    let b = Ball::new(
+        &context,
+        Vertex::new(0.0, 0.0, 0.0),
+        1.0,
+        20,
+        Colour::RED,
+        program.clone(),
+    );
+
+
     let draw_routine = Rc::new(RefCell::new(None));
     let draw_routine_launcher = draw_routine.clone();
 
     // Draw loop
     {
-        // let x = x.clone();
-        // let y = y.clone();
-        // let z = z.clone();
-        //
-        // let tx = tx.clone();
-        // let ty = ty.clone();
-        // let tz = tz.clone();
+        let x = x.clone();
+        let y = y.clone();
+        let z = z.clone();
 
-        let t = t.clone();
+        let tx = tx.clone();
+        let ty = ty.clone();
+        let tz = tz.clone();
 
         let fov = fov.clone();
         let near = near.clone();
         let far = far.clone();
 
-        let ca = ca.clone();
         let context = context.clone();
         let canvas = canvas.clone();
 
         *draw_routine_launcher.borrow_mut() =
             Some(Closure::<dyn FnMut()>::new(move || {
+                let x = *x.borrow();
+                let y = *y.borrow();
+                let z = *z.borrow();
+
+                let tx = *tx.borrow();
+                let ty = *ty.borrow();
+                let tz = *tz.borrow();
+
                 utils::clear_context(&context);
                 utils::resize_canvas(&canvas, &context);
-                *t.borrow_mut() += 0.02;
-                let t = *t.borrow();
 
                 let transforms = [
                     matrix::perspective_matrix(
@@ -275,52 +286,15 @@ fn run(
                         *near.borrow(),
                         *far.borrow(),
                     ),
-                    matrix::translate_matrix(
-                        // *tx.borrow(),
-                        // *ty.borrow(),
-                        // *tz.borrow(),
-                        (t + FRAC_PI_8).sin() * 0.8,
-                        (t + FRAC_PI_6).sin() * 0.8,
-                        -3.0,
-                    ),
-                    matrix::rotate_x_matrix(t + FRAC_PI_4),
-                    matrix::rotate_y_matrix(t + FRAC_PI_3),
-                    matrix::rotate_z_matrix(t + FRAC_PI_2),
+                    matrix::translate_matrix(tx, ty, tz),
+                    matrix::rotate_x_matrix(x),
+                    matrix::rotate_y_matrix(y),
+                    matrix::rotate_z_matrix(z),
                 ];
-                let uniform_matrix = matrix::mat_mul_many(&transforms);
-                log(&format!(
-                    r"
-| {:.2} {:.2} {:.2} {:.2} |
-| {:.2} {:.2} {:.2} {:.2} |
-| {:.2} {:.2} {:.2} {:.2} |
-| {:.2} {:.2} {:.2} {:.2} |
-                        ",
-                    uniform_matrix[0],
-                    uniform_matrix[1],
-                    uniform_matrix[2],
-                    uniform_matrix[3],
-                    uniform_matrix[4],
-                    uniform_matrix[5],
-                    uniform_matrix[6],
-                    uniform_matrix[7],
-                    uniform_matrix[8],
-                    uniform_matrix[9],
-                    uniform_matrix[10],
-                    uniform_matrix[11],
-                    uniform_matrix[12],
-                    uniform_matrix[13],
-                    uniform_matrix[14],
-                    uniform_matrix[15],
-                ));
 
-                let v = mat_vec_mul(uniform_matrix, [1.0, 0.01, 0.01, 1.0]);
-                let v = vec_scalar_div(v, v[3]);
-                log(&format!("tz = {}", *tz.borrow()));
-                log(&format!(
-                    " | {:.2} {:.2} {:.2} {:.2} | ",
-                    v[0], v[1], v[2], v[3]
-                ));
-                ca.draw(&context, Some(uniform_matrix)).unwrap();
+                let uniform_matrix = matrix::mat_mul_many(&transforms);
+
+                b.draw(&context, Some(uniform_matrix)).unwrap();
 
                 utils::request_animation_frame(
                     draw_routine.borrow().as_ref().unwrap(),
